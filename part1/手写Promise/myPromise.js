@@ -4,7 +4,11 @@ const REJECTED = 'rejected';
 
 class MyPromise {
   constructor(executor) {
-    executor(this.resolve, this.reject);
+    try {
+      executor(this.resolve, this.reject);
+    } catch (error) {
+      this.reject(error);
+    }
   }
   //promise状态
   status = PENDING;
@@ -25,7 +29,7 @@ class MyPromise {
     this.value = value;
     //判断是否存在成功回调
     this.successCallback.forEach((item) => {
-      item(this.value);
+      item();
     });
   };
   reject = (error) => {
@@ -37,33 +41,100 @@ class MyPromise {
     this.error = error;
     //判断是否存在失败回调
     this.failCallback.forEach((item) => {
-      item(this.error);
+      item();
     });
   };
   then(successCallback, failCallback) {
+    successCallback = successCallback ? successCallback : (value) => value;
+    failCallback = failCallback
+      ? failCallback
+      : (error) => {
+          throw error;
+        };
     //判断状态成功还是失败
     const promise = new MyPromise((resolve, reject) => {
       if (this.status === FULFILLED) {
         setTimeout(() => {
-          const value = successCallback(this.value);
-          resolvePromise(promise, value, resolve, reject);
+          try {
+            const value = successCallback(this.value);
+            resolvePromise(promise, value, resolve, reject);
+          } catch (error) {
+            reject(error);
+          }
         }, 0);
       } else if (this.status === REJECTED) {
-        failCallback(this.error);
+        setTimeout(() => {
+          try {
+            const value = failCallback(this.error);
+            resolvePromise(promise, value, resolve, reject);
+          } catch (error) {
+            reject(error);
+          }
+        }, 0);
       } else {
         //解决异步问题
-        this.successCallback.push(successCallback);
-        this.failCallback.push(failCallback);
+        this.successCallback.push(() => {
+          setTimeout(() => {
+            try {
+              const value = successCallback(this.value);
+              resolvePromise(promise, value, resolve, reject);
+            } catch (error) {
+              reject(error);
+            }
+          }, 0);
+        });
+        this.failCallback.push(() => {
+          setTimeout(() => {
+            try {
+              const value = failCallback(this.error);
+              resolvePromise(promise, value, resolve, reject);
+            } catch (error) {
+              reject(error);
+            }
+          }, 0);
+        });
       }
     });
     return promise;
+  }
+
+  static all(array) {
+    const data = [];
+    let index = 0;
+    return new MyPromise((resolve, reject) => {
+      function addData(key, value) {
+        data[key] = value;
+        index++;
+        if (index === array.length) {
+          resolve(data);
+        }
+      }
+
+      for (let index = 0; index < array.length; index++) {
+        const cured = array[index];
+        if (cured instanceof MyPromise) {
+          //是promise
+          cured.then(
+            (value) => {
+              addData(index, value);
+            },
+            (error) => {
+              reject(error);
+            },
+          );
+        } else {
+          //是普通值
+          addData(index, cured);
+        }
+      }
+    });
   }
 }
 
 function resolvePromise(promise, value, resolve, reject) {
   //promise自己返回自己
   if (promise === value) {
-    return reject(new TypeError('promise反复调用'));
+    return reject(new TypeError('promise循环调用'));
   }
   //判断value是普通值还是promiser对象
   if (value instanceof MyPromise) {

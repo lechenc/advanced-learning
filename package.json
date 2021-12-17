@@ -1,0 +1,27 @@
+{
+  "name": "advanced-learning",
+  "version": "1.0.0",
+  "description": "",
+  "main": ".prettierrc.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lechenc/advanced-learning.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lechenc/advanced-learning/issues"
+  },
+  "homepage": "https://github.com/lechenc/advanced-learning#readme",
+  "dependencies": {
+    "folktale": "^2.3.2",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "prettier": "2.5.1"
+  }
+}
